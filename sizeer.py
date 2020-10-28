@@ -140,8 +140,9 @@ class SizeerBot:
             "Accept-Language": "pl-PL,pl;q=0.9,en-XA;q=0.8,en;q=0.7,en-US;q=0.6,de;q=0.5"
         }
         try:
-            response = self.s.get("https://sklep.sizeer.com/meskie/akcesoria?sort=price_asc&limit=60&page=1",
+            response = self.s.get("https://sklep.sizeer.com/meskie/akcesoria",
                                   headers=headers, proxies=self.task['proxy_dict'], timeout=10)
+            print(response.text)
             self.product_url = "https://sklep.sizeer.com" + \
                                 BeautifulSoup(response.text, "html.parser").find("a", {"class": "b-itemList_photoLink"})["href"]
             headers["Sec-Fetch-Site"] = "same-origin"
@@ -174,11 +175,11 @@ class SizeerBot:
                   f" Retrying...")
             self.load_bypass_product()
             return
-        except Exception as error:
-            print(f"{datetime.datetime.now().strftime('[%H:%M:%S:%f]')} [TASK {self.task['id']}] Bypass: {error}."
-                  f" Retrying...")
-            self.load_bypass_product()
-            return
+        # except Exception as error:
+        #     print(f"{datetime.datetime.now().strftime('[%H:%M:%S:%f]')} [TASK {self.task['id']}] Bypass: {error}."
+        #           f" Retrying...")
+        #     self.load_bypass_product()
+        #     return
 
         self.add_to_basket()
         return
@@ -814,7 +815,6 @@ class SizeerBot:
         print(f"{datetime.datetime.now().strftime('[%H:%M:%S:%f]')} [TASK {self.task['id']}]"
               f" Checking out... {time.time() - self.start}")
         data = f"cart_flow_summation_step%5B_token%5D={self.checkout_token}"
-        return
         headers = {
             "Host": "sklep.sizeer.com",
             "Connection": "keep-alive",
@@ -886,7 +886,7 @@ class SizeerBot:
                 self.sum_order()
             return
 
-        self.send_webhook()
+        # self.send_webhook()
         return
 
     def send_webhook(self):
