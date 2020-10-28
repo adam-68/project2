@@ -838,6 +838,7 @@ class SizeerBot:
         try:
             order_summary = self.s.post("https://sklep.sizeer.com/koszyk/podsumowanie/zapisz", headers=headers,
                                         data=data, proxies=self.task['proxy_dict'], timeout=15)
+            # edit
             while "Twoje zamówienie zostało zarejestrowane pod" not in order_summary.text:
                 time.sleep(.1)
                 self.errors_num += 1
@@ -887,7 +888,6 @@ class SizeerBot:
             return
 
         # self.send_webhook()
-        return
 
     def send_webhook(self):
         webhook = DiscordWebhook(url=self.task['webhook_url'],username="Sizeer")
