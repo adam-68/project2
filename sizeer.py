@@ -1,7 +1,8 @@
 # coding=utf8
 from discord_webhook import DiscordWebhook, DiscordEmbed
-from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 from bs4 import BeautifulSoup
+from dataclasses import dataclass
+from typing import Dict
 import datetime
 import re
 import json
@@ -13,16 +14,14 @@ class SizeerBot:
     def __init__(self, task, profile):
         self.task = task
         self.product_url = ""
-        self.path = ""
         self.s = requests.Session()
-        self.title = ""
-        self.image_url = ""
         self.profile = profile
-        self.pid = ""
         self.curr_sizes = []
         self.token = ""
+        self.pid = ""
+        self.image_url = ""
+        self.title = ""
         self.errors_num = 0
-        self.start = ''
         self.hash = ""
         self.checkout_token = ""
         self.bypass = ""
@@ -120,7 +119,6 @@ class SizeerBot:
         return
 
     def load_bypass_product(self):
-        self.start = time.time()
         print(f"{datetime.datetime.now().strftime('[%H:%M:%S:%f]')} [TASK {self.task['id']}]"
               f" Loading bypass...")
         headers = {
@@ -131,8 +129,8 @@ class SizeerBot:
                           "Chrome/83.0.4103.106 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,"
                       "application/signed-exchange;v=b3;q=0.9",
-            "Sec-Fetch-Site": "same-origin",
-            "Referer": "https://sklep.sizeer.com/profile",
+            "Sec-Fetch-Site": "none",
+            # "Referer": "https://sklep.sizeer.com/profile",
             "Sec-Fetch-Mode": "navigate",
             "Sec-Fetch-User": "?1",
             "Sec-Fetch-Dest": "document",
@@ -142,7 +140,6 @@ class SizeerBot:
         try:
             response = self.s.get("https://sklep.sizeer.com/meskie/akcesoria",
                                   headers=headers, proxies=self.task['proxy_dict'], timeout=10)
-            print(response.text)
             self.product_url = "https://sklep.sizeer.com" + \
                                 BeautifulSoup(response.text, "html.parser").find("a", {"class": "b-itemList_photoLink"})["href"]
             headers["Sec-Fetch-Site"] = "same-origin"
@@ -175,11 +172,11 @@ class SizeerBot:
                   f" Retrying...")
             self.load_bypass_product()
             return
-        # except Exception as error:
-        #     print(f"{datetime.datetime.now().strftime('[%H:%M:%S:%f]')} [TASK {self.task['id']}] Bypass: {error}."
-        #           f" Retrying...")
-        #     self.load_bypass_product()
-        #     return
+        except Exception as error:
+            print(f"{datetime.datetime.now().strftime('[%H:%M:%S:%f]')} [TASK {self.task['id']}] Bypass: {error}."
+                  f" Retrying...")
+            self.load_bypass_product()
+            return
 
         self.add_to_basket()
         return
@@ -710,12 +707,12 @@ class SizeerBot:
                f"cart_flow_address_step%5BbillingAddress%5D%5BapartmentNumber%5D=&" \
                f"cart_flow_address_step%5BbillingAddress%5D%5Bpostcode%5D=&" \
                f"cart_flow_address_step%5BbillingAddress%5D%5Bcity%5D=&" \
+               f"cart_flow_address_step%5BconsentForm%5D%5Bconsent_1925%5D%5B%5D=1925&" \
+               f"cart_flow_address_step%5BconsentForm%5D%5Bconsent_1760%5D%5B%5D=1760&" \
                f"cart_flow_address_step%5BconsentForm%5D%5Bconsent_1778%5D%5B%5D=1778&" \
                f"cart_flow_address_step%5BtransportAddress%5D%5BaddressType%5D=person&" \
                f"cart_flow_address_step%5BcustomerComment%5D=&" \
                f"cart_flow_address_step%5B_token%5D={self.token}"
-        data = f"cart_flow_address_step%5BaccountAddress%5D%5BfirstName%5D=gfds&cart_flow_address_step%5BaccountAddress%5D%5BlastName%5D=agfd&cart_flow_address_step%5BaccountAddress%5D%5Bemail%5D=afdasdf%40gmail.com&cart_flow_address_step%5BaccountAddress%5D%5BaddressType%5D=person&cart_flow_address_step%5BaccountAddress%5D%5Bcompany%5D=&cart_flow_address_step%5BaccountAddress%5D%5Bnip%5D=&cart_flow_address_step%5BaccountAddress%5D%5Bphone%5D=543-897-987&cart_flow_address_step%5BaccountAddress%5D%5Bstreet%5D=gsfads&cart_flow_address_step%5BaccountAddress%5D%5BhouseNumber%5D=34&cart_flow_address_step%5BaccountAddress%5D%5BapartmentNumber%5D=&cart_flow_address_step%5BaccountAddress%5D%5Bpostcode%5D=42-341&cart_flow_address_step%5BaccountAddress%5D%5Bcity%5D=hdfsd&cart_flow_address_step%5BsameTransportAddress%5D=1&cart_flow_address_step%5BtransportAddress%5D%5Bcompany%5D=&cart_flow_address_step%5BtransportAddress%5D%5BfirstName%5D=&cart_flow_address_step%5BtransportAddress%5D%5BlastName%5D=&cart_flow_address_step%5BtransportAddress%5D%5Bphone%5D=&cart_flow_address_step%5BtransportAddress%5D%5Bstreet%5D=&cart_flow_address_step%5BtransportAddress%5D%5BhouseNumber%5D=&cart_flow_address_step%5BtransportAddress%5D%5BapartmentNumber%5D=&cart_flow_address_step%5BtransportAddress%5D%5Bpostcode%5D=&cart_flow_address_step%5BtransportAddress%5D%5Bcity%5D=&cart_flow_address_step%5BsameBillingAddress%5D=1&cart_flow_address_step%5BbillingAddress%5D%5BfirstName%5D=&cart_flow_address_step%5BbillingAddress%5D%5BlastName%5D=&cart_flow_address_step%5BbillingAddress%5D%5BaddressType%5D=person&cart_flow_address_step%5BbillingAddress%5D%5Bcompany%5D=&cart_flow_address_step%5BbillingAddress%5D%5Bnip%5D=&cart_flow_address_step%5BbillingAddress%5D%5Bphone%5D=&cart_flow_address_step%5BbillingAddress%5D%5Bstreet%5D=&cart_flow_address_step%5BbillingAddress%5D%5BhouseNumber%5D=&cart_flow_address_step%5BbillingAddress%5D%5BapartmentNumber%5D=&cart_flow_address_step%5BbillingAddress%5D%5Bpostcode%5D=&cart_flow_address_step%5BbillingAddress%5D%5Bcity%5D=&cart_flow_address_step%5BconsentForm%5D%5Bconsent_1925%5D%5B%5D=1925&cart_flow_address_step%5BconsentForm%5D%5Bconsent_1760%5D%5B%5D=1760&cart_flow_address_step%5BconsentForm%5D%5Bconsent_1778%5D%5B%5D=1778&cart_flow_address_step%5BtransportAddress%5D%5BaddressType%5D=person&cart_flow_address_step%5BcustomerComment%5D=&cart_flow_address_step%5B_token%5D={self.token}"
-
 
         headers = {
             "Host": "sklep.sizeer.com",
@@ -800,20 +797,20 @@ class SizeerBot:
                 self.send_address()
             return
 
-        # if self.task['bypass'] == "enable":
-        #     self.bypass = "done"
-        #     self.product_url = self.task['product_url']
-        #     print(f"{datetime.datetime.now().strftime('[%H:%M:%S:%f]')} [TASK {self.task['id']}]"
-        #           f" Bypass loaded.")
-        #     self.load_product()
-        #     return
-        # else:
-        self.sum_order()
-        return
+        if self.task['bypass'] == "enable":
+            self.bypass = "done"
+            self.product_url = self.task['product_url']
+            print(f"{datetime.datetime.now().strftime('[%H:%M:%S:%f]')} [TASK {self.task['id']}]"
+                  f" Bypass loaded.")
+            self.load_product()
+            return
+        else:
+            self.sum_order()
+            return
 
     def sum_order(self):
         print(f"{datetime.datetime.now().strftime('[%H:%M:%S:%f]')} [TASK {self.task['id']}]"
-              f" Checking out... {time.time() - self.start}")
+              f" Checking out... ")
         data = f"cart_flow_summation_step%5B_token%5D={self.checkout_token}"
         headers = {
             "Host": "sklep.sizeer.com",
@@ -838,6 +835,7 @@ class SizeerBot:
         try:
             order_summary = self.s.post("https://sklep.sizeer.com/koszyk/podsumowanie/zapisz", headers=headers,
                                         data=data, proxies=self.task['proxy_dict'], timeout=15)
+
             while "Twoje zamówienie zostało zarejestrowane pod" not in order_summary.text:
                 time.sleep(.1)
                 self.errors_num += 1
@@ -886,7 +884,7 @@ class SizeerBot:
                 self.sum_order()
             return
 
-        # self.send_webhook()
+        self.send_webhook()
         return
 
     def send_webhook(self):
@@ -896,10 +894,16 @@ class SizeerBot:
                                                                 "/1/1b/Internet_Explorer_9_icon.svg/384px-Internet_"
                                                                 "Explorer_9_icon.svg.png")
         embed.set_timestamp()
-        embed.add_embed_field(name='Product', value=self.title)
+        if self.title:
+            embed.add_embed_field(name='Product', value=self.title)
+        else:
+            embed.add_embed_field(name="Product", value="Error loading product title")
         embed.add_embed_field(name='Style Code', value=self.task['sku'].upper())
         embed.add_embed_field(name='Size', value=self.task['size'])
-        embed.set_thumbnail(url=self.image_url)
+        if not self.image_url:
+            embed.set_thumbnail(url="https://i.imgur.com/sjDBHUW.png")
+        else:
+            embed.set_thumbnail(url=self.image_url)
         embed.add_embed_field(name='Email', value=self.profile["email"].replace("%40", "@"))
         webhook.add_embed(embed)
         response = webhook.execute()
@@ -907,7 +911,10 @@ class SizeerBot:
 
 def main(task, profile):
     new_instance = SizeerBot(task, profile)
-    new_instance.load_bypass_product()
+    if task['bypass'] == "enable":
+        new_instance.load_bypass_product()
+    else:
+        new_instance.load_product()
 
 
 if __name__ == "__main__":
@@ -918,36 +925,22 @@ if __name__ == "__main__":
         proxies = f2.read().split("\n")
         profiles = json.load(f3)
     threads = []
-    from threading import Thread
     from multiprocessing import Process
-    # start = time.time()
 
     for i in range(len(tasks)):
-        proxy_list = proxies[i].split(":")
-        proxy_dict = {
-            "http": f"http://{proxy_list[2]}:{proxy_list[3]}@{proxy_list[0]}:{proxy_list[1]}",
-            "https": f"https://{proxy_list[2]}:{proxy_list[3]}@{proxy_list[0]}:{proxy_list[1]}"
-        }
-        tasks[i]["proxy_dict"] = proxy_dict
+        if proxies[i] or proxies[i] != "":
+            proxy_list = proxies[i].split(":")
+            proxy_dict = {
+                "http": f"http://{proxy_list[2]}:{proxy_list[3]}@{proxy_list[0]}:{proxy_list[1]}",
+                "https": f"https://{proxy_list[2]}:{proxy_list[3]}@{proxy_list[0]}:{proxy_list[1]}"
+            }
+            tasks[i]["proxy_dict"] = proxy_dict
+        else:
+            tasks[i]["proxy_dict"] = ''
+
         p = Process(target=main, args=(tasks[i], profiles[0]))
         p.start()
         threads.append(p)
 
     for p in threads:
         p.join()
-    # with ProcessPoolExecutor(max_workers=len(tasks)) as executor:
-    #     futures = []
-    #     for i in range(len(tasks)):
-    #         proxy_list = proxies[i].split(":")
-    #         proxy_dict = {
-    #             "http": f"http://{proxy_list[2]}:{proxy_list[3]}@{proxy_list[0]}:{proxy_list[1]}",
-    #             "https": f"https://{proxy_list[2]}:{proxy_list[3]}@{proxy_list[0]}:{proxy_list[1]}"
-    #         }
-    #         tasks[i]["proxy_dict"] = proxy_dict
-    #         task_data = [tasks[i], profiles[0]]
-    #         futures.append(executor.submit(lambda p: main(*p), task_data))
-    #
-    #     results = []
-    #     for result in as_completed(futures):
-    #         results.append(result)
-    # print(time.time() - start)
