@@ -1,0 +1,7 @@
+httpx
+bs4
+requests
+tornado
+discord_webhook
+asyncio
+win32clipboard
